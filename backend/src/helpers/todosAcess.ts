@@ -1,6 +1,6 @@
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
-import { DeleteItemInput, DocumentClient } from 'aws-sdk/clients/dynamodb'
+import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { createLogger } from '../utils/logger'
 import { TodoItem } from '../models/TodoItem'
 import { TodoUpdate } from '../models/TodoUpdate'
@@ -13,7 +13,8 @@ const logger = createLogger('TodosAccess')
 export class TodosAccess {
   constructor(
     private readonly docClient: DocumentClient = createDynamoDBClient(),
-    private readonly todosTable: string = process.env.TODOS_TABLE
+    private readonly todosTable: string = process.env.TODOS_TABLE,
+    private readonly todosIndex: string = process.env.TODOS_CREATED_AT_INDEX
   ) {}
 
   async getUserTodos(userId: string): Promise<TodoItem[]> {
@@ -22,11 +23,11 @@ export class TodosAccess {
     const result = await this.docClient
       .query({
         TableName: this.todosTable,
+        IndexName: this.todosIndex,
         KeyConditionExpression: 'userId = :userId',
         ExpressionAttributeValues: {
           ':userId': userId
-        },
-        ScanIndexForward: false
+        }
       })
       .promise()
 
@@ -66,8 +67,8 @@ export class TodosAccess {
     const params = {
       TableName: this.todosTable,
       Key: {
-        todoId: todoId,
-        userId: userId
+        userId: userId,
+        todoId: todoId
       },
       UpdateExpression: 'set #name = :name, #dueDate = :dueDate, #done = :done',
       ExpressionAttributeNames: {
@@ -94,8 +95,8 @@ export class TodosAccess {
     let params = {
       TableName: this.todosTable,
       Key: {
-        "todoId": todoId,
-        "userId": userId
+        userId: userId,
+        todoId: todoId
       }
     }
 

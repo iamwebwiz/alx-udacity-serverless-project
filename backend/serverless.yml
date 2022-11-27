@@ -8,6 +8,7 @@ plugins:
   - serverless-iam-roles-per-function
   - serverless-plugin-tracing
   - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
 
 provider:
   name: aws
@@ -41,6 +42,20 @@ provider:
             - xray:PutTelemetryRecords
           Resource: "*"
 
+custom:
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: Serverless Todos App
+        description: Serverless application for managing todos
+    models:
+      - name: CreateTodoRequest
+        contentType: application/json
+        schema: ${file(models/create-todo-model.json)}
+      - name: UpdateTodoRequest
+        contentType: application/json
+        schema: ${file(models/update-todo-model.json)}
 
 functions:
 
@@ -57,16 +72,20 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
+    iamRoleStatementsName: ${self:app}-get-todos-role-${self:provider.stage}
     iamRoleStatements:
-     - Effect: Allow
-       Action:
-         - dynamodb:Query
-        #  - dynamodb:Scan
-       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-     - Effect: Allow
-       Action:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODOS_CREATED_AT_INDEX}
+      - Effect: Allow
+        Action:
           - xray:PutTraceSegments
-       Resource:
+        Resource:
           - '*'
 
   # TODO: Configure this function -
@@ -82,13 +101,17 @@ functions:
           cors: true
           authorizer: Auth
           reqValidatorName: RequestBodyValidator
-          request:
-            schemas:
-              application/json: ${file(models/create-todo-model.json)}
+          documentation:
+            summary: Create a new todo
+            description: Create a new todo
+            requestModels:
+              'application/json': CreateTodoRequest
+    iamRoleStatementsName: ${self:app}-create-todo-role-${self:provider.stage}
     iamRoleStatements:
      - Effect: Allow
        Action:
          - dynamodb:PutItem
+         - dynamodb:Query
        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
      - Effect: Allow
        Action:
@@ -107,9 +130,12 @@ functions:
           authorizer: Auth
           cors: true
           reqValidatorName: RequestBodyValidator
-          request:
-            schemas:
-              application/json: ${file(models/update-todo-model.json)}
+          documentation:
+            summary: Update an existing todo item
+            description: Update an existing todo item
+            requestModels:
+              'application/json': UpdateTodoRequest
+    iamRoleStatementsName: ${self:app}-update-todo-role-${self:provider.stage}
     iamRoleStatements:
      - Effect: Allow
        Action:
@@ -132,17 +158,18 @@ functions:
           path: todos/{todoId}
           cors: true
           authorizer: Auth
+    iamRoleStatementsName: ${self:app}-delete-todo-role-${self:provider.stage}
     iamRoleStatements:
-     - Effect: Allow
-       Action:
+      - Effect: Allow
+        Action:
          - dynamodb:DeleteItem
          - dynamodb:Query
          - dynamodb:GetItem
-       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-     - Effect: Allow
-       Action:
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
           - xray:PutTraceSegments
-       Resource:
+        Resource:
           - '*'
 
   # TODO: Configure this function
@@ -155,6 +182,7 @@ functions:
           path: todos/{todoId}/attachment
           cors: true
           authorizer: Auth
+    iamRoleStatementsName: ${self:app}-generate-upload-url-role-${self:provider.stage}
     iamRoleStatements:
      - Effect: Allow
        Action:
