@@ -31,6 +31,8 @@ export class TodosAccess {
       })
       .promise()
 
+    logger.info(`Todos for user [${userId}] retrieved successfully`)
+
     return result.Items as TodoItem[]
   }
 
@@ -67,14 +69,12 @@ export class TodosAccess {
     const params = {
       TableName: this.todosTable,
       Key: {
-        userId: userId,
-        todoId: todoId
+        todoId: todoId,
+        userId: userId
       },
-      UpdateExpression: 'set #name = :name, #dueDate = :dueDate, #done = :done',
+      UpdateExpression: 'set #name = :name, dueDate = :dueDate, done = :done',
       ExpressionAttributeNames: {
-        '#name': 'name',
-        '#dueDate': 'dueDate',
-        '#done': 'done'
+        '#name': 'name'
       },
       ExpressionAttributeValues: {
         ':name': payload?.name,
@@ -92,12 +92,9 @@ export class TodosAccess {
   async deleteTodo(todoId: string, userId: string): Promise<void> {
     logger.info(`Deleting todo item [${todoId}]`)
 
-    let params = {
+    const params = {
       TableName: this.todosTable,
-      Key: {
-        userId: userId,
-        todoId: todoId
-      }
+      Key: { todoId, userId }
     }
 
     await this.docClient.delete(params).promise()

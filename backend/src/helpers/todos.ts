@@ -10,7 +10,7 @@ const attachmentUtils = new AttachmentUtils()
 
 // TODO: Implement businessLogic
 export async function getTodosForUser(userId: string): Promise<TodoItem[]> {
-  return todosAccess.getUserTodos(userId)
+  return await todosAccess.getUserTodos(userId)
 }
 
 export async function findTodoById(todoId: string): Promise<TodoItem> {
