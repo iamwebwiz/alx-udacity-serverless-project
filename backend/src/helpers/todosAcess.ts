@@ -36,13 +36,14 @@ export class TodosAccess {
     return result.Items as TodoItem[]
   }
 
-  async findTodoById(todoId: string): Promise<TodoItem> {
+  async findTodoById(todoId: string, userId: string): Promise<TodoItem> {
     logger.info(`Running lookup for todo item [${todoId}]`)
     const result = await this.docClient
       .get({
         TableName: this.todosTable,
         Key: {
-          todoId
+          todoId,
+          userId
         }
       })
       .promise()
@@ -69,8 +70,8 @@ export class TodosAccess {
     const params = {
       TableName: this.todosTable,
       Key: {
-        todoId: todoId,
-        userId: userId
+        "userId": userId,
+        "todoId": todoId
       },
       UpdateExpression: 'set #name = :name, dueDate = :dueDate, done = :done',
       ExpressionAttributeNames: {
@@ -89,15 +90,24 @@ export class TodosAccess {
     logger.info(`Todo item [${todoId}] updated successfully`)
   }
 
-  async deleteTodo(todoId: string, userId: string): Promise<void> {
-    logger.info(`Deleting todo item [${todoId}]`)
+  async deleteTodo(todoItem: TodoItem): Promise<void> {
+    logger.info(`Deleting todo item [${todoItem.todoId}]`)
+
+    const key = {
+      userId: todoItem.userId,
+      todoId: todoItem.todoId
+    }
 
     const params = {
       TableName: this.todosTable,
-      Key: { todoId, userId }
+      Key: key
     }
 
-    await this.docClient.delete(params).promise()
+    try {
+      await this.docClient.delete(params).promise()
+    } catch (e) {
+      logger.error('Error deleting todo item', { error: e.message })
+    }
   }
 }
 
