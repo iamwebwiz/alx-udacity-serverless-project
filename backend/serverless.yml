@@ -7,7 +7,7 @@ plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
   - serverless-plugin-tracing
-  - serverless-reqvalidator-plugin
+  # - serverless-reqvalidator-plugin
 
 provider:
   name: aws
@@ -120,7 +120,7 @@ functions:
           method: patch
           path: todos/{todoId}
           cors: true
-          auth: Auth
+          authorizer: Auth
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -151,12 +151,12 @@ functions:
           method: delete
           path: todos/{todoId}
           cors: true
-          auth: Auth
+          authorizer: Auth
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:GetItem
           - dynamodb:DeleteItem
+          - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
       - Effect: Allow
         Action:
@@ -173,7 +173,7 @@ functions:
           method: post
           path: todos/{todoId}/attachment
           cors: true
-          auth: Auth
+          authorizer: Auth
     iamRoleStatements:
       - Effect: Allow
         Action:

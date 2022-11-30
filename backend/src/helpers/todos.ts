@@ -4,17 +4,20 @@ import { TodoItem } from '../models/TodoItem'
 import { CreateTodoRequest } from '../requests/CreateTodoRequest'
 import { UpdateTodoRequest } from '../requests/UpdateTodoRequest'
 import * as uuid from 'uuid'
+import { createLogger } from '../utils/logger'
 
 const todosAccess = new TodosAccess()
 const attachmentUtils = new AttachmentUtils()
+
+const logger = createLogger('todosLogger')
 
 // TODO: Implement businessLogic
 export async function getTodosForUser(userId: string): Promise<TodoItem[]> {
   return await todosAccess.getUserTodos(userId)
 }
 
-export async function findTodoById(todoId: string): Promise<TodoItem> {
-  return await todosAccess.findTodoById(todoId)
+export async function findTodoById(todoId: string, userId: string): Promise<TodoItem> {
+  return await todosAccess.findTodoById(todoId, userId)
 }
 
 export async function createTodo(todo: CreateTodoRequest, userId: string): Promise<TodoItem> {
@@ -32,7 +35,7 @@ export async function createTodo(todo: CreateTodoRequest, userId: string): Promi
 }
 
 export async function updateTodo(payload: UpdateTodoRequest, todoId: string, userId: string): Promise<void> {
-  const todoItem = await findTodoById(todoId)
+  const todoItem = await findTodoById(todoId, userId)
 
   if (!todoItem) throw new Error(`Todo with id [${todoId}] does not exist`)
   if (todoItem.userId !== userId) throw new Error('Todo does not belong to authenticated user')
@@ -41,16 +44,18 @@ export async function updateTodo(payload: UpdateTodoRequest, todoId: string, use
 }
 
 export async function deleteTodo(todoId: string, userId: string): Promise<void> {
-  const todoItem = await findTodoById(todoId)
+  const todoItem = await findTodoById(todoId, userId)
 
   if (!todoItem) throw new Error(`Todo with id [${todoId}] does not exist`)
   if (todoItem.userId !== userId) throw new Error('Todo does not belong to authenticated user')
 
-  return await todosAccess.deleteTodo(todoId, userId)
+  logger.info('todo item match found', { todoItem: todoItem })
+
+  return await todosAccess.deleteTodo(todoItem)
 }
 
 export async function createAttachmentPresignedUrl(todoId: string, userId: string): Promise<string> {
-  const todoItem = await findTodoById(todoId)
+  const todoItem = await findTodoById(todoId, userId)
 
   if (!todoItem) throw new Error(`Todo with id [${todoId}] does not exist`)
   if (todoItem.userId !== userId) throw new Error('Todo does not belong to authenticated user')

@@ -2,9 +2,11 @@ import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { createDynamoDBClient } from './todosAcess'
+import { createLogger } from '../utils/logger'
 
 const XAWS = AWSXRay.captureAWS(AWS)
 const s3 = new XAWS.S3({ signatureVersion: 'v4' })
+const logger = createLogger('AttachmentUtils')
 
 // TODO: Implement the fileStogare logic
 export class AttachmentUtils {
@@ -16,6 +18,8 @@ export class AttachmentUtils {
   ) {}
 
   async generateUploadUrl(imageId: string, todoId: string, userId: string): Promise<string> {
+    logger.info('Generating pre-signed URL')
+
     const params = {
       TableName: this.todosTable,
       Key: { todoId, userId },
@@ -31,6 +35,6 @@ export class AttachmentUtils {
       Bucket: this.bucketName,
       Key: imageId,
       Expires: parseInt(this.signedUrlExpiration)
-    })
+    }) as string
   }
 }
